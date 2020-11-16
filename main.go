@@ -10,21 +10,40 @@ import (
 var fd = (int)(os.Stdin.Fd())
 
 const (
-	q = 113
-	h = 104
-	j = 106
-	k = 107
-	l = 108
+	colons = 58
+	q      = 113
+	h      = 104
+	j      = 106
+	k      = 107
+	l      = 108
 )
 
 var clearScreen = []byte("\x1b[2J")
 
 type editor struct {
+	normal     mode
+	command    mode
+	insert     mode
+	mode       mode
 	rows, cols int
 	cx, cy     int
 }
 
-var e = editor{}
+type mode interface {
+	input(byte)
+}
+
+type normal struct {
+	editor editor
+}
+
+type command struct {
+	editor editor
+}
+
+type insert struct {
+	editor editor
+}
 
 func main() {
 	state, err := terminal.MakeRaw(fd)
@@ -38,57 +57,81 @@ func main() {
 		panic(err)
 	}
 
-	e.cols = width
-	e.rows = height
-	e.cx = 0
-	e.cy = 0
+	editor := editor{}
+	normal := normal{editor: editor}
+	command := command{editor: editor}
+	insert := insert{editor: editor}
 
-	write(clearScreen)
-	refresh()
+	editor.normal = normal
+	editor.command = command
+	editor.insert = insert
+	editor.mode = normal
+	editor.cols = width
+	editor.rows = height
+	editor.cx = 0
+	editor.cy = 0
 
-	fmt.Println(e.cols, " ", e.rows)
+	editor.refresh()
 
 	var b []byte = make([]byte, 1)
 	for {
 		os.Stdin.Read(b)
-		switch b[0] {
-		case q:
-			return
-		case h:
-			if e.cx > 0 {
-				e.cx = e.cx - 1
-				refresh()
-			}
-			break
-		case j:
-			if e.cy < e.rows-1 {
-				e.cy = e.cy + 1
-				refresh()
-			}
-			break
-		case k:
-			if e.cy > 0 {
-				e.cy = e.cy - 1
-				refresh()
-			}
-			break
-		case l:
-			if e.cx < e.cols-1 {
-				e.cx = e.cx + 1
-				refresh()
-			}
-			break
-		default:
-			fmt.Println("I got the byte", b, "("+string(b)+")")
-		}
+		editor.mode.input(b[0])
 	}
 }
 
-func refresh() {
-	write(clearScreen)
-	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H")
+func (m normal) input(b byte) {
+	switch b {
+	case q:
+		os.Exit(0)
+	case h:
+		if m.editor.cx > 0 {
+			m.editor.cx = m.editor.cx - 1
+			m.editor.refresh()
+		}
+		break
+	case j:
+		if m.editor.cy < m.editor.rows-1 {
+			m.editor.cy = m.editor.cy + 1
+			m.editor.refresh()
+		}
+		break
+	case k:
+		if m.editor.cy > 0 {
+			m.editor.cy = m.editor.cy - 1
+			m.editor.refresh()
+		}
+		break
+	case l:
+		if m.editor.cx < m.editor.cols-1 {
+			m.editor.cx = m.editor.cx + 1
+			m.editor.refresh()
+		}
+		break
+	default:
+		fmt.Println("I got the byte", b, "("+string(b)+")")
+	}
 }
 
-func write(b []byte) {
-	os.Stdin.Write(b)
+func (m command) input(b byte) {
+	switch b {
+	case colons:
+		return
+	default:
+		fmt.Println("I got the byte", b, "("+string(b)+")")
+	}
+}
+
+func (m insert) input(b byte) {
+	switch b {
+	case colons:
+		return
+	default:
+		fmt.Println("I got the byte", b, "("+string(b)+")")
+	}
+}
+
+func (e editor) refresh() {
+	os.Stdin.Write(clearScreen)
+	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H")
 }
