@@ -10,6 +10,7 @@ import (
 var fd = (int)(os.Stdin.Fd())
 
 const (
+	esc    = 27
 	colons = 58
 	q      = 113
 	h      = 104
@@ -30,19 +31,20 @@ type editor struct {
 }
 
 type mode interface {
+	enter()
 	input(byte)
 }
 
 type normal struct {
-	editor editor
+	editor *editor
 }
 
 type command struct {
-	editor editor
+	editor *editor
 }
 
 type insert struct {
-	editor editor
+	editor *editor
 }
 
 func main() {
@@ -57,7 +59,7 @@ func main() {
 		panic(err)
 	}
 
-	editor := editor{}
+	editor := &editor{}
 	normal := normal{editor: editor}
 	command := command{editor: editor}
 	insert := insert{editor: editor}
@@ -65,12 +67,13 @@ func main() {
 	editor.normal = normal
 	editor.command = command
 	editor.insert = insert
-	editor.mode = normal
+	editor.mode = editor.normal
 	editor.cols = width
 	editor.rows = height
 	editor.cx = 0
 	editor.cy = 0
 
+	editor.mode.enter()
 	editor.refresh()
 
 	var b []byte = make([]byte, 1)
@@ -80,10 +83,24 @@ func main() {
 	}
 }
 
+func (m normal) enter() {
+}
+
+func (m command) enter() {
+}
+
+func (m insert) enter() {
+}
+
 func (m normal) input(b byte) {
 	switch b {
 	case q:
 		os.Exit(0)
+		break
+	case colons:
+		m.editor.mode = m.editor.command
+		m.editor.mode.enter()
+		break
 	case h:
 		if m.editor.cx > 0 {
 			m.editor.cx = m.editor.cx - 1
@@ -91,6 +108,7 @@ func (m normal) input(b byte) {
 		}
 		break
 	case j:
+		fmt.Println(m.editor.rows)
 		if m.editor.cy < m.editor.rows-1 {
 			m.editor.cy = m.editor.cy + 1
 			m.editor.refresh()
@@ -115,19 +133,28 @@ func (m normal) input(b byte) {
 
 func (m command) input(b byte) {
 	switch b {
-	case colons:
-		return
+	case esc:
+		m.editor.mode = m.editor.normal
+		m.editor.mode.enter()
+		break
+	case q:
+		os.Exit(0)
+		break
 	default:
-		fmt.Println("I got the byte", b, "("+string(b)+")")
+		fmt.Println("Normal mode")
 	}
 }
 
 func (m insert) input(b byte) {
 	switch b {
+	case esc:
+		m.editor.mode = m.editor.normal
+		m.editor.mode.enter()
+		break
 	case colons:
 		return
 	default:
-		fmt.Println("I got the byte", b, "("+string(b)+")")
+		fmt.Println("Isert mode")
 	}
 }
 
