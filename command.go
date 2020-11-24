@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"os"
 )
 
 type command struct {
@@ -50,7 +49,7 @@ func (m command) apply() {
 		m.editor.mode.enter()
 		break
 	case ":q":
-		os.Exit(0)
+		m.editor.exit()
 		break
 	default:
 	}
