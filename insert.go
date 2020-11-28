@@ -6,7 +6,7 @@ type insert struct {
 
 func (m insert) enter() {
 	m.editor.status = "Insert mode"
-	m.editor.refresh()
+	m.editor.draw()
 }
 
 func (m insert) leave() {

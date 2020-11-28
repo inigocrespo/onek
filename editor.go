@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -25,8 +27,25 @@ type mode interface {
 	input(byte)
 }
 
-func newEditor() (*editor, error) {
+type editor struct {
+	filename                string
+	lines                   [][]byte
+	state                   *terminal.State
+	normal, command, insert mode
+	mode                    mode
+	rows, cols              int
+	rowoffset, coloffset    int
+	cx, cy                  int
+	status                  string
+}
+
+func newEditor(filename string) (*editor, error) {
 	width, height, err := terminal.GetSize((int)(os.Stdin.Fd()))
+	if err != nil {
+		return nil, err
+	}
+
+	lines, err := readLines(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -36,25 +55,57 @@ func newEditor() (*editor, error) {
 	command := command{editor: editor}
 	insert := insert{editor: editor}
 
+	editor.filename = filename
+	editor.lines = lines
 	editor.normal = normal
 	editor.command = command
 	editor.insert = insert
 	editor.mode = editor.normal
 	editor.cols = width
 	editor.rows = height
+	editor.rowoffset = 0
+	editor.coloffset = 0
 	editor.cx = 0
 	editor.cy = 0
 
 	return editor, nil
 }
 
-type editor struct {
-	state                   *terminal.State
-	normal, command, insert mode
-	mode                    mode
-	rows, cols              int
-	cx, cy                  int
-	status                  string
+func readLines(filename string) ([][]byte, error) {
+
+	var lines [][]byte = make([][]byte, 0)
+	if len(filename) > 0 {
+		file, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+
+		reader := bufio.NewReader(file)
+		isNewLine := true
+		for {
+			line, isPrefix, err := reader.ReadLine()
+			if err == io.EOF {
+				break
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			if isNewLine {
+				newLine := make([]byte, len(line), len(line))
+				copy(newLine, line)
+				lines = append(lines, newLine)
+			} else {
+				newLine := lines[len(lines)-1]
+				newLine = append(newLine, line...)
+			}
+
+			isNewLine = !isPrefix
+		}
+	}
+
+	return lines, nil
 }
 
 func (e *editor) makeRaw() error {
@@ -77,16 +128,27 @@ func (e *editor) start() {
 	}
 }
 
-func (e *editor) refresh() {
+func (e *editor) draw() {
+	os.Stdin.Write([]byte("\x1b[?25l"))
 	os.Stdin.Write([]byte("\x1b[2J"))
-	for i := 0; i < e.rows; i++ {
-		fmt.Print("~\r\n")
+	os.Stdin.Write([]byte("\x1b[H"))
+
+	/*
+		for i := 0; i < e.rows; i++ {
+			fmt.Print("~\r\n")
+		}
+	*/
+
+	for _, b := range e.lines {
+		fmt.Print(string(b), "\r\n")
 	}
+
 	fmt.Print(e.status)
 	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H") // print cursor
+	os.Stdin.Write([]byte("\x1b[?25h"))
 }
 
-func (e *editor) exit() {
+func (e *editor) stop() {
 	terminal.Restore((int)(os.Stdin.Fd()), e.state)
 	os.Exit(0)
 }

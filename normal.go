@@ -10,7 +10,7 @@ type normal struct {
 
 func (m normal) enter() {
 	m.editor.status = "Normal mode"
-	m.editor.refresh()
+	m.editor.draw()
 }
 
 func (m normal) leave() {
@@ -31,25 +31,25 @@ func (m normal) input(b byte) {
 	case h:
 		if m.editor.cx > 0 {
 			m.editor.cx = m.editor.cx - 1
-			m.editor.refresh()
+			m.editor.draw()
 		}
 		break
 	case j:
 		if m.editor.cy < m.editor.rows-1 {
 			m.editor.cy = m.editor.cy + 1
-			m.editor.refresh()
+			m.editor.draw()
 		}
 		break
 	case k:
 		if m.editor.cy > 0 {
 			m.editor.cy = m.editor.cy - 1
-			m.editor.refresh()
+			m.editor.draw()
 		}
 		break
 	case l:
 		if m.editor.cx < m.editor.cols-1 {
 			m.editor.cx = m.editor.cx + 1
-			m.editor.refresh()
+			m.editor.draw()
 		}
 		break
 	default:

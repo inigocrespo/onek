@@ -16,7 +16,7 @@ func (m command) enter() {
 	m.editor.status = ":"
 	m.editor.cx = 1
 	m.editor.cy = m.editor.rows
-	m.editor.refresh()
+	m.editor.draw()
 }
 
 func (m command) leave() {
@@ -37,7 +37,7 @@ func (m command) input(b byte) {
 		buff.WriteByte(b)
 		m.editor.status = buff.String()
 		m.editor.cx = m.editor.cx + 1
-		m.editor.refresh()
+		m.editor.draw()
 	}
 }
 
@@ -49,7 +49,7 @@ func (m command) apply() {
 		m.editor.mode.enter()
 		break
 	case ":q":
-		m.editor.exit()
+		m.editor.stop()
 		break
 	default:
 	}
