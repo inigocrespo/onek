@@ -133,18 +133,21 @@ func (e *editor) draw() {
 	os.Stdin.Write([]byte("\x1b[2J"))
 	os.Stdin.Write([]byte("\x1b[H"))
 
-	/*
-		for i := 0; i < e.rows; i++ {
-			fmt.Print("~\r\n")
+	for i := 0; i < e.rows-1; i++ {
+		if i < len(e.lines) {
+			if i != 0 {
+				fmt.Print("\r\n")
+			}
+			b := e.lines[i]
+			fmt.Print(string(b))
+		} else {
+			fmt.Print("\r\n")
 		}
-	*/
-
-	for _, b := range e.lines {
-		fmt.Print(string(b), "\r\n")
 	}
 
+	fmt.Print("\r\n")
 	fmt.Print(e.status)
-	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H") // print cursor
+	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H")
 	os.Stdin.Write([]byte("\x1b[?25h"))
 }
 
