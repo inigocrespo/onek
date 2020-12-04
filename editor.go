@@ -134,12 +134,13 @@ func (e *editor) draw() {
 	os.Stdin.Write([]byte("\x1b[H"))
 
 	for i := 0; i < e.rows-1; i++ {
-		if i < len(e.lines) {
+		j := e.cy - e.rowoffset + i
+		if j < len(e.lines) {
 			if i != 0 {
 				fmt.Print("\r\n")
 			}
-			b := e.lines[i]
-			fmt.Print(string(b))
+			b := e.lines[j]
+			fmt.Print(string(b), " ", e.cy, " ", e.rowoffset)
 		} else {
 			fmt.Print("\r\n")
 		}
@@ -147,7 +148,7 @@ func (e *editor) draw() {
 
 	fmt.Print("\r\n")
 	fmt.Print(e.status)
-	fmt.Print("\x1b[", e.cy+1, ";", e.cx+1, "H")
+	fmt.Print("\x1b[", e.rowoffset+1, ";", e.cx+1, "H")
 	os.Stdin.Write([]byte("\x1b[?25h"))
 }
 

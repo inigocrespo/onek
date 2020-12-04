@@ -38,6 +38,11 @@ func (m normal) input(b byte) {
 	case j:
 		if m.editor.cy < len(m.editor.lines)-1 {
 			m.editor.cy = m.editor.cy + 1
+
+			if m.editor.rowoffset < m.editor.rows-2 {
+				m.editor.rowoffset = m.editor.rowoffset + 1
+			}
+
 			if m.editor.cx > len(m.editor.lines[m.editor.cy])-1 {
 				m.editor.cx = len(m.editor.lines[m.editor.cy]) - 1
 			}
@@ -48,6 +53,11 @@ func (m normal) input(b byte) {
 	case k:
 		if m.editor.cy > 0 {
 			m.editor.cy = m.editor.cy - 1
+
+			if m.editor.rowoffset > 0 {
+				m.editor.rowoffset = m.editor.rowoffset - 1
+			}
+
 			if m.editor.cx > len(m.editor.lines[m.editor.cy])-1 {
 				m.editor.cx = len(m.editor.lines[m.editor.cy]) - 1
 			}
